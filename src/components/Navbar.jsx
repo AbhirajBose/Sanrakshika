@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -25,18 +25,24 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAuth } from '../contexts/AuthContext';
+import DefaultAvatar from './DefaultAvatar';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
 
 const pages = [
-  { title: 'Home', path: '/' },
-  { title: 'About', path: '/about' },
-  { title: 'Dashboard', path: '/dashboard' },
-  { title: 'Map', path: '/map' },
-  { title: 'Monitoring', path: '/monitoring' },
-  { title: 'Emergency', path: '/emergency' },
-  { title: 'Contact', path: '/contact' },
+  { name: 'Home', path: '/' },
+  { name: 'About', path: '/about' },
+  { name: 'Contact', path: '/contact' },
+];
+
+const authenticatedPages = [
+  { name: 'Dashboard', path: '/dashboard' },
+  { name: 'Map', path: '/map' },
+  { name: 'Monitoring', path: '/monitoring' },
+  { name: 'Emergency', path: '/emergency' },
+  { name: 'Cryopreservation', path: '/cryopreservation' },
+  { name: 'Analytics', path: '/analytics' },
 ];
 
 const settings = [
@@ -54,6 +60,7 @@ const Navbar = () => {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
 
   const handleOpenNavMenu = (event) => {
@@ -83,6 +90,20 @@ const Navbar = () => {
     handleCloseNavMenu();
     handleCloseUserMenu();
     setMobileOpen(false);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    handleCloseNavMenu();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
   };
 
   useEffect(() => {
@@ -120,17 +141,72 @@ const Navbar = () => {
       <Typography variant="h6" sx={{ my: 2 }}>
         Sanrakshika
       </Typography>
-      <Divider />
-      <List>
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.18)' }} />
+      <List sx={{ px: 1 }}>
         {pages.map((page) => (
-          <ListItem 
-            button 
-            key={page.title} 
+          <ListItem
+            button
+            key={page.name}
             component={RouterLink} 
             to={page.path}
             selected={location.pathname === page.path}
+            sx={{
+              background: location.pathname === page.path 
+                ? 'rgba(0, 242, 255, 0.15)'
+                : 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              '&:hover': {
+                background: 'rgba(0, 242, 255, 0.1)',
+              },
+              transition: 'all 0.3s ease',
+              my: 0.5,
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}
           >
-            <ListItemText primary={page.title} />
+            <ListItemText 
+              primary={page.name} 
+              sx={{
+                color: 'white',
+                '& .MuiTypography-root': {
+                  fontWeight: location.pathname === page.path ? 600 : 400
+                }
+              }}
+            />
+          </ListItem>
+        ))}
+        {currentUser && authenticatedPages.map((page) => (
+          <ListItem
+            button
+            key={page.name}
+            component={RouterLink} 
+            to={page.path}
+            selected={location.pathname === page.path}
+            sx={{
+              background: location.pathname === page.path 
+                ? 'rgba(0, 242, 255, 0.15)'
+                : 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              '&:hover': {
+                background: 'rgba(0, 242, 255, 0.1)',
+              },
+              transition: 'all 0.3s ease',
+              my: 0.5,
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <ListItemText 
+              primary={page.name} 
+              sx={{
+                color: 'white',
+                '& .MuiTypography-root': {
+                  fontWeight: location.pathname === page.path ? 600 : 400
+                }
+              }}
+            />
           </ListItem>
         ))}
       </List>
@@ -138,20 +214,28 @@ const Navbar = () => {
   );
 
   return (
-    <AppBar 
-      position="fixed" 
+    <AppBar
+      position="fixed"
       ref={navbarRef}
-      sx={{ 
+      sx={{
         background: scrolled 
-          ? 'rgba(10, 25, 47, 0.95)' 
-          : 'transparent',
-        boxShadow: scrolled ? 1 : 0,
-        transition: 'all 0.3s ease'
+          ? 'rgba(10, 25, 47, 0.7)'
+          : 'rgba(10, 25, 47, 0.4)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: scrolled 
+          ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+          : 'none',
+        borderBottom: scrolled 
+          ? '1px solid rgba(255, 255, 255, 0.18)'
+          : 'none',
+        transition: 'all 0.3s ease',
+        zIndex: 1200
       }}
     >
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
-          {/* Logo - Desktop */}
+        <Toolbar disableGutters sx={{ minHeight: { xs: '56px', sm: '64px' } }}>
+          {/* Logo */}
           <Typography
             variant="h6"
             noWrap
@@ -160,36 +244,26 @@ const Navbar = () => {
             sx={{
               mr: 2,
               display: { xs: 'none', md: 'flex' },
+              fontFamily: 'Audiowide',
               fontWeight: 700,
+              letterSpacing: '.1rem',
               color: 'white',
               textDecoration: 'none',
-              background: 'linear-gradient(135deg, #00f2ff, #0066ff)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              fontSize: { md: '1.1rem', lg: '1.2rem' },
+              textShadow: '0 0 10px rgba(0, 242, 255, 0.5)',
+              '&:hover': {
+                color: '#00f2ff',
+                textShadow: '0 0 15px rgba(0, 242, 255, 0.8)',
+              },
+              transition: 'all 0.3s ease',
             }}
           >
-            Sanrakshika
+            SANRAKSHIKA
           </Typography>
 
-          {/* Mobile menu */}
-          {isMobile && (
-            <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
-              <IconButton
-                size="large"
-                aria-label="menu"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleDrawerToggle}
-                sx={{ color: 'white' }}
-              >
-                <MenuIcon />
-              </IconButton>
-            </Box>
-          )}
-
-          {/* Logo - Mobile */}
+          {/* Mobile Logo */}
           <Typography
-            variant="h6"
+            variant="h5"
             noWrap
             component={RouterLink}
             to="/"
@@ -197,41 +271,127 @@ const Navbar = () => {
               mr: 2,
               display: { xs: 'flex', md: 'none' },
               flexGrow: 1,
+              fontFamily: 'Audiowide',
               fontWeight: 700,
+              letterSpacing: '.1rem',
               color: 'white',
               textDecoration: 'none',
+              fontSize: '1rem',
+              textShadow: '0 0 10px rgba(0, 242, 255, 0.5)',
+              '&:hover': {
+                color: '#00f2ff',
+                textShadow: '0 0 15px rgba(0, 242, 255, 0.8)',
+              },
+              transition: 'all 0.3s ease',
             }}
           >
-            Sanrakshika
+            SANRAKSHIKA
           </Typography>
 
-          {/* Desktop menu */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+          {/* Mobile Menu Button */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+            <IconButton
+              size="large"
+              aria-label="menu"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleDrawerToggle}
+              color="inherit"
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Box>
+
+          {/* Desktop Navigation */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 0.2 }}>
             {pages.map((page) => (
               <Button
-                key={page.title}
+                key={page.name}
                 component={RouterLink}
                 to={page.path}
                 onClick={handleCloseNavMenu}
                 sx={{
-                  my: 2,
                   color: 'white',
                   display: 'block',
-                  backgroundColor: location.pathname === page.path ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  px: 1,
+                  py: 0.6,
+                  borderRadius: '8px',
+                  background: location.pathname === page.path 
+                    ? 'rgba(0, 242, 255, 0.15)'
+                    : 'transparent',
+                  '&:hover': {
+                    background: 'rgba(0, 242, 255, 0.1)',
+                  },
+                  transition: 'all 0.3s ease',
+                  fontSize: { md: '0.8rem', lg: '0.85rem' },
+                  ...(page.name === 'Home' && {
+                    ml: 2,
+                    minWidth: '60px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  })
                 }}
               >
-                {page.title}
+                {page.name}
+              </Button>
+            ))}
+            {currentUser && authenticatedPages.map((page) => (
+              <Button
+                key={page.name}
+                component={RouterLink}
+                to={page.path}
+                onClick={handleCloseNavMenu}
+                sx={{
+                  color: 'white',
+                  display: 'block',
+                  px: page.name === 'Map' ? 0.3 : 1,
+                  py: 0.6,
+                  borderRadius: '8px',
+                  background: location.pathname === page.path 
+                    ? 'rgba(0, 242, 255, 0.15)'
+                    : 'transparent',
+                  '&:hover': {
+                    background: 'rgba(0, 242, 255, 0.1)',
+                  },
+                  transition: 'all 0.3s ease',
+                  fontSize: { md: '0.8rem', lg: '0.85rem' },
+                  ...(page.name === 'Map' && {
+                    minWidth: '50px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  })
+                }}
+              >
+                {page.name}
               </Button>
             ))}
           </Box>
 
-          {/* Auth buttons */}
-          <Box sx={{ flexGrow: 0 }}>
+          {/* User Menu */}
+          <Box sx={{ flexGrow: 0, ml: 0.5 }}>
             {currentUser ? (
               <>
                 <Tooltip title="Open settings">
                   <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                    <Avatar alt={currentUser.email} src="/static/images/avatar/2.jpg" />
+                    <Avatar
+                      alt={currentUser.displayName || 'User'}
+                      src={currentUser.photoURL}
+                      sx={{
+                        width: { xs: 32, sm: 36 },
+                        height: { xs: 32, sm: 36 },
+                        border: '2px solid rgba(0, 242, 255, 0.5)'
+                      }}
+                    />
                   </IconButton>
                 </Tooltip>
                 <Menu
@@ -249,11 +409,28 @@ const Navbar = () => {
                   }}
                   open={Boolean(anchorElUser)}
                   onClose={handleCloseUserMenu}
+                  PaperProps={{
+                    sx: {
+                      background: 'rgba(17, 34, 64, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      mt: 1.5
+                    }
+                  }}
                 >
                   {settings.map((setting) => (
-                    <MenuItem 
-                      key={setting.name} 
+                    <MenuItem
+                      key={setting.name}
                       onClick={() => handleMenuItemClick(setting.path, setting.action)}
+                      sx={{
+                        color: 'white',
+                        '&:hover': {
+                          background: 'rgba(0, 242, 255, 0.1)',
+                        },
+                        fontSize: '0.85rem',
+                        py: 0.6
+                      }}
                     >
                       <Typography textAlign="center">{setting.name}</Typography>
                     </MenuItem>
@@ -261,12 +438,22 @@ const Navbar = () => {
                 </Menu>
               </>
             ) : (
-              <>
+              <Box sx={{ display: 'flex', gap: 2, ml: 2 }}>
                 <Button
                   component={RouterLink}
                   to="/login"
-                  color="inherit"
-                  sx={{ mr: 1 }}
+                  variant="outlined"
+                  sx={{
+                    color: 'white',
+                    borderColor: 'rgba(0, 242, 255, 0.5)',
+                    '&:hover': {
+                      borderColor: '#00f2ff',
+                      background: 'rgba(0, 242, 255, 0.1)',
+                    },
+                    fontSize: { md: '0.8rem', lg: '0.85rem' },
+                    py: 0.6,
+                    px: 1.5
+                  }}
                 >
                   Login
                 </Button>
@@ -274,30 +461,43 @@ const Navbar = () => {
                   component={RouterLink}
                   to="/signup"
                   variant="contained"
-                  color="primary"
+                  sx={{
+                    background: 'linear-gradient(45deg, #00f2ff 30%, #00b8ff 90%)',
+                    color: 'white',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #00e6ff 30%, #00a8ff 90%)',
+                    },
+                    fontSize: { md: '0.8rem', lg: '0.85rem' },
+                    color: 'black',
+                    py: 0.6,
+                    px: 1.5
+                  }}
                 >
                   Sign Up
                 </Button>
-              </>
+              </Box>
             )}
           </Box>
         </Toolbar>
       </Container>
+
+      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         anchor="left"
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true, // Better open performance on mobile
         }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { 
-            boxSizing: 'border-box', 
-            width: 240,
-            background: 'rgba(10, 25, 47, 0.95)',
-            color: 'white'
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: { xs: '100%', sm: 280 },
+            background: 'rgba(17, 34, 64, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderRight: '1px solid rgba(255, 255, 255, 0.1)'
           },
         }}
       >
